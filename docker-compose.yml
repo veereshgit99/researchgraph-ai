@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  neo4j:
+    image: neo4j:5.15-community
+    container_name: researchgraph-neo4j
+    ports:
+      - "7474:7474"  # Web browser interface
+      - "7687:7687"  # Database connection
+    environment:
+      - NEO4J_AUTH=neo4j/neo4j123  # username/password
+    volumes:
+      - neo4j_data:/data
+
+volumes:
+  neo4j_data:

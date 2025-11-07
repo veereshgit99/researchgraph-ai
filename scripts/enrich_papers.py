@@ -5,7 +5,7 @@ import os
 import json
 import time
 from typing import Dict, List
-import anthropic
+import google.generativeai as genai
 from app.core.neo4j_driver import get_neo4j_driver
 import logging
 
@@ -15,8 +15,9 @@ logger = logging.getLogger(__name__)
 from dotenv import load_dotenv
 load_dotenv()  # Load environment variables from .env file
 
-# Initialize Claude client
-client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+# Initialize Gemini client
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 EXTRACTION_PROMPT = """You are an AI research expert. Analyze this academic paper and extract structured information.
 
@@ -54,51 +55,86 @@ Rules:
 - Do not include explanations, only the JSON
 """
 
-def extract_entities(title: str, abstract: str, max_retries: int = 3) -> Dict:
-    """
-    Extract entities using Claude with retry logic.
-    """
+def extract_entities(title, abstract, max_retries=3):
     for attempt in range(max_retries):
         try:
-            message = client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=2000,
-                temperature=0,  # Deterministic output
-                messages=[{
-                    "role": "user",
-                    "content": EXTRACTION_PROMPT.format(
-                        title=title,
-                        abstract=abstract[:1500]  # Limit abstract length
-                    )
-                }]
+            prompt = EXTRACTION_PROMPT.format(title=title, abstract=abstract[:1500])
+            response = model.generate_content(
+                prompt, 
+                generation_config={
+                    "temperature": 0, 
+                    "max_output_tokens": 2000,
+                    "response_mime_type": "application/json"  # Force JSON response
+                },
+                safety_settings=[
+                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+                ]
             )
             
-            # Parse Claude's response
-            response_text = message.content[0].text.strip()
+            # Check if response was blocked
+            if not response.candidates:
+                logger.warning(f"Response blocked by safety filters (attempt {attempt+1})")
+                if attempt == max_retries - 1:
+                    logger.error(f"All attempts blocked - returning empty entities")
+                    return {"concepts": [], "methods": [], "datasets": [], "metrics": []}
+                time.sleep(1)
+                continue
             
-            # Remove markdown code blocks if present
-            if response_text.startswith("```"):
-                response_text = response_text.split("```")[1]
-                if response_text.startswith("json"):
-                    response_text = response_text[4:]
-                response_text = response_text.strip()
+            # Get response text
+            response_text = response.text.strip() if hasattr(response, 'text') else ""
             
-            entities = json.loads(response_text)
-            return entities
+            if not response_text:
+                logger.error(f"No usable Gemini response text (attempt {attempt+1})")
+                time.sleep(1)
+                continue
             
+            # Try to parse JSON
+            try:
+                entities = json.loads(response_text)
+                return entities
+            except json.JSONDecodeError as json_err:
+                logger.warning(f"JSON parse error (attempt {attempt+1}): {json_err}. Attempting self-correction...")
+                
+                # Ask Gemini to fix the broken JSON
+                fix_prompt = (
+                    "The following text is not valid JSON due to a formatting error. "
+                    "Please analyze and return ONLY the corrected JSON object with no explanations:\n\n"
+                    f"{response_text}"
+                )
+                
+                correction_response = model.generate_content(
+                    fix_prompt,
+                    generation_config={
+                        "temperature": 0,
+                        "response_mime_type": "application/json"
+                    },
+                    safety_settings=[
+                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+                    ]
+                )
+                
+                corrected_text = correction_response.text.strip()
+                entities = json.loads(corrected_text)
+                logger.info(f"✅ JSON self-correction successful!")
+                return entities
+                
         except json.JSONDecodeError as e:
-            logger.error(f"JSON decode error (attempt {attempt + 1}): {e}")
-            if attempt == max_retries - 1:
-                return {"concepts": [], "methods": [], "datasets": [], "metrics": []}
-            time.sleep(1)
-            
+            logger.error(f"JSON decode error (attempt {attempt+1}): {e}")
         except Exception as e:
-            logger.error(f"Extraction error (attempt {attempt + 1}): {e}")
-            if attempt == max_retries - 1:
-                return {"concepts": [], "methods": [], "datasets": [], "metrics": []}
-            time.sleep(1)
+            logger.error(f"Extraction error (attempt {attempt+1}): {e}")
+        
+        time.sleep(1)
     
+    # Safe fallback
     return {"concepts": [], "methods": [], "datasets": [], "metrics": []}
+
+
 
 def create_concept(driver, concept_data: Dict, paper_arxiv_id: str):
     """Create concept node and link to paper"""
@@ -244,7 +280,7 @@ def enrich_papers(limit: int = 10, skip_enriched: bool = True):
         except Exception as e:
             logger.error(f"  ❌ Error enriching paper: {e}")
         
-        # Rate limiting (Claude: ~1 request/sec recommended)
+        # Rate limiting (Gemini: ~1 request/sec recommended)
         time.sleep(1)
     
     logger.info(f"\n✅ Enrichment complete! Processed {len(papers)} papers")
@@ -252,9 +288,9 @@ def enrich_papers(limit: int = 10, skip_enriched: bool = True):
 
 if __name__ == "__main__":
     # Get API key from environment
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        logger.error("❌ ANTHROPIC_API_KEY not set in environment")
+    if not os.getenv("GEMINI_API_KEY"):
+        logger.error("❌ GEMINI_API_KEY not set in environment")
         exit(1)
     
-    # Enrich 10 papers as test
-    enrich_papers(limit=10)
+    # Enrich all unenriched papers (180 new papers)
+    enrich_papers(limit=200)  # Process up to 200 papers

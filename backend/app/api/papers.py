@@ -54,7 +54,7 @@ async def get_paper_graph(arxiv_id: str):
     from app.core.neo4j_driver import get_neo4j_driver
     driver = get_neo4j_driver()
     
-    # Get paper with all its relationships
+    # Get paper with all its relationships...
     query = """
     MATCH (p:Paper)
     WHERE p.arxiv_id = $arxiv_id 

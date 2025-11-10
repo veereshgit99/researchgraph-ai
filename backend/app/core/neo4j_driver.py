@@ -124,34 +124,74 @@ class Neo4jDriver:
         return result[0]['arxiv_id'] if result else None
     
     def get_paper(self, arxiv_id: str) -> Optional[Dict]:
-        """Get paper by arXiv ID"""
-        query = """
-        MATCH (p:Paper {arxiv_id: $arxiv_id})
-        RETURN p
-        """
-        result = self.execute_read(query, {'arxiv_id': arxiv_id})
-        return result[0]['p'] if result else None
-    
-    def list_papers(self, limit: int = 100, offset: int = 0) -> List[Dict]:
-        """List papers with pagination"""
+        """Get paper by arXiv ID with authors, concepts, and methods"""
         query = """
         MATCH (p:Paper)
-        RETURN p
+        WHERE p.arxiv_id = $arxiv_id 
+           OR (p.arxiv_base_id IS NOT NULL AND p.arxiv_base_id = $arxiv_id)
+        OPTIONAL MATCH (p)-[:AUTHORED_BY]->(a:Author)
+        OPTIONAL MATCH (p)-[:INTRODUCES]->(c:Concept)
+        OPTIONAL MATCH (p)-[:PROPOSES]->(m:Method)
+        WITH p, 
+             collect(DISTINCT a.name) as authors,
+             collect(DISTINCT c.name) as graph_concepts,
+             collect(DISTINCT m.name) as graph_methods
+        RETURN p {
+            .*, 
+            authors: CASE WHEN size(authors) > 0 THEN authors ELSE [] END,
+            graph_concepts: graph_concepts,
+            graph_methods: graph_methods
+        } as paper
+        LIMIT 1
+        """
+        result = self.execute_read(query, {'arxiv_id': arxiv_id})
+        return result[0]['paper'] if result else None
+    
+    def list_papers(self, limit: int = 100, offset: int = 0) -> List[Dict]:
+        """List papers with pagination, authors, concepts, and methods"""
+        query = """
+        MATCH (p:Paper)
+        OPTIONAL MATCH (p)-[:AUTHORED_BY]->(a:Author)
+        OPTIONAL MATCH (p)-[:INTRODUCES]->(c:Concept)
+        OPTIONAL MATCH (p)-[:PROPOSES]->(m:Method)
+        WITH p, 
+             collect(DISTINCT a.name) as authors,
+             collect(DISTINCT c.name) as graph_concepts,
+             collect(DISTINCT m.name) as graph_methods
+        RETURN p {
+            .*, 
+            authors: CASE WHEN size(authors) > 0 THEN authors ELSE [] END,
+            graph_concepts: graph_concepts,
+            graph_methods: graph_methods
+        } as paper
         ORDER BY p.published_date DESC
         SKIP $offset
         LIMIT $limit
         """
         result = self.execute_read(query, {'limit': limit, 'offset': offset})
-        return [r['p'] for r in result]
+        return [r['paper'] for r in result]
     
     def search_papers(self, search_term: str, limit: int = 20) -> List[Dict]:
-        """Full-text search papers"""
+        """Full-text search papers with authors, concepts, and methods"""
         query = """
         CALL db.index.fulltext.queryNodes(
             'paper_fulltext', 
             $search_term
         ) YIELD node, score
-        RETURN node as p, score
+        WITH node as p, score
+        OPTIONAL MATCH (p)-[:AUTHORED_BY]->(a:Author)
+        OPTIONAL MATCH (p)-[:INTRODUCES]->(c:Concept)
+        OPTIONAL MATCH (p)-[:PROPOSES]->(m:Method)
+        WITH p, score,
+             collect(DISTINCT a.name) as authors,
+             collect(DISTINCT c.name) as graph_concepts,
+             collect(DISTINCT m.name) as graph_methods
+        RETURN p {
+            .*, 
+            authors: CASE WHEN size(authors) > 0 THEN authors ELSE [] END,
+            graph_concepts: graph_concepts,
+            graph_methods: graph_methods
+        } as paper, score
         ORDER BY score DESC
         LIMIT $limit
         """
@@ -159,7 +199,7 @@ class Neo4jDriver:
             'search_term': search_term,
             'limit': limit
         })
-        return [{'paper': r['p'], 'score': r['score']} for r in result]
+        return [{'paper': r['paper'], 'score': r['score']} for r in result]
 
 # Singleton instance
 neo4j_driver = Neo4jDriver()

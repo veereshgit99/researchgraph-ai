@@ -67,6 +67,37 @@ const GraphVisualization = ({ arxivId, hiddenNodeTypes = [], onGraphLoad }: Grap
         return 100;
     };
 
+    const formatNodeTooltip = (node: GraphNode): string => {
+        if (node.type !== 'Paper') return '';
+
+        const year = node.properties.published_date
+            ? new Date(node.properties.published_date).getFullYear()
+            : 'N/A';
+        const categories = node.properties.categories?.join(', ') || 'N/A';
+        return `📄 ${node.label}\n\n` +
+            `Year: ${year}\n` +
+            `ArXiv ID: ${node.properties.arxiv_id || 'N/A'}\n` +
+            `Categories: ${categories}`;
+    };
+
+    const formatEdgeLabel = (edgeType: string): string => {
+        switch (edgeType) {
+            case 'AUTHORED_BY':
+            case 'AUTHORED':
+                return 'AUTHORED BY';
+            case 'INTRODUCES':
+                return 'INTRODUCES';
+            case 'PROPOSES':
+                return 'PROPOSES';
+            case 'EVALUATES_ON':
+                return 'EVALUATES ON';
+            case 'USES_METRIC':
+                return 'USES METRIC';
+            default:
+                return edgeType;
+        }
+    };
+
     const layoutNodes = (graphData: GraphData): { nodes: Node[]; edges: Edge[] } => {
         // Group nodes by type for better layout
         const nodesByType: { [key: string]: GraphNode[] } = {};
@@ -135,13 +166,17 @@ const GraphVisualization = ({ arxivId, hiddenNodeTypes = [], onGraphLoad }: Grap
         const reactFlowNodes: Node[] = graphData.nodes.map((node) => {
             const nodeWidth = getNodeSize(node.type);
             const pos = positions[node.id] || { x: 0, y: 0 };
+            const tooltip = formatNodeTooltip(node);
 
             return {
                 id: node.id,
                 type: 'default',
                 data: {
                     label: (
-                        <div style={{ textAlign: 'center', padding: node.type === 'Paper' ? '10px' : '6px' }}>
+                        <div
+                            style={{ textAlign: 'center', padding: node.type === 'Paper' ? '10px' : '6px' }}
+                            {...(tooltip && { title: tooltip })}
+                        >
                             <div style={{
                                 fontWeight: 'bold',
                                 fontSize: node.type === 'Paper' ? '10px' : '9px',
@@ -164,6 +199,7 @@ const GraphVisualization = ({ arxivId, hiddenNodeTypes = [], onGraphLoad }: Grap
                         </div>
                     ),
                     nodeType: node.type,
+                    tooltip: formatNodeTooltip(node),
                 },
                 position: pos,
                 style: {
@@ -176,6 +212,7 @@ const GraphVisualization = ({ arxivId, hiddenNodeTypes = [], onGraphLoad }: Grap
                     boxShadow: node.type === 'Paper'
                         ? '0 8px 32px rgba(99, 102, 241, 0.4)'
                         : '0 4px 12px rgba(0, 0, 0, 0.15)',
+                    cursor: 'pointer',
                 },
             };
         });
@@ -186,10 +223,23 @@ const GraphVisualization = ({ arxivId, hiddenNodeTypes = [], onGraphLoad }: Grap
             target: edge.target,
             type: 'default',
             animated: false,
+            label: formatEdgeLabel(edge.type),
             style: {
                 stroke: getEdgeColor(edge.type),
                 strokeWidth: 2,
                 strokeOpacity: 0.4,
+            },
+            labelStyle: {
+                fontSize: '9px',
+                fill: '#64748b',
+                fontWeight: 600,
+                backgroundColor: 'white',
+                padding: '2px 4px',
+                borderRadius: '4px',
+            },
+            labelBgStyle: {
+                fill: 'white',
+                fillOpacity: 0.9,
             },
             markerEnd: {
                 type: MarkerType.ArrowClosed,

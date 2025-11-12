@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     NEO4J_USER: str = "neo4j"
     NEO4J_PASSWORD: str = "neo4j123"
     
+    # OpenAI
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    
     # API
     API_PREFIX: str = "/api/v1"
     

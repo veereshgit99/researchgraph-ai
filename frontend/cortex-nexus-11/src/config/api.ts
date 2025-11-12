@@ -5,5 +5,8 @@ export const API_CONFIG = {
         PAPERS_SEARCH: '/api/v1/papers/search/',
         PAPER_DETAIL: (arxivId: string) => `/api/v1/papers/${arxivId}/`,
         PAPER_GRAPH: (arxivId: string) => `/api/v1/papers/${arxivId}/graph`,
+        ASSISTANT_CHAT: '/api/v1/assistant/chat',
+        ASSISTANT_CHAT_STREAM: '/api/v1/assistant/chat/stream',
+        ASSISTANT_HEALTH: '/api/v1/assistant/health',
     }
 };

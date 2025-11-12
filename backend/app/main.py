@@ -5,7 +5,7 @@ import logging
 
 from app.core.config import settings
 from app.core.neo4j_driver import get_neo4j_driver
-from app.api import papers
+from app.api import papers, assistant
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -49,6 +49,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(papers.router, prefix=settings.API_PREFIX)
+app.include_router(assistant.router, prefix=settings.API_PREFIX)
 
 @app.get("/")
 async def root():

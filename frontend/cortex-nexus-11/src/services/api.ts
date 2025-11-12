@@ -3,7 +3,7 @@ import { API_CONFIG } from '@/config/api';
 
 const api = axios.create({
     baseURL: API_CONFIG.BASE_URL,
-    timeout: 10000,
+    timeout: 60000, // Increased to 60 seconds for AI responses
     headers: {
         'Content-Type': 'application/json',
     },
@@ -59,6 +59,61 @@ export const paperAPI = {
     // Get paper graph data
     getGraph: async (arxivId: string) => {
         const response = await api.get(API_CONFIG.ENDPOINTS.PAPER_GRAPH(arxivId));
+        return response.data;
+    },
+};
+
+export interface Message {
+    role: 'user' | 'assistant';
+    content: string;
+}
+
+export interface ChatRequest {
+    message: string;
+    conversation_history?: Message[];
+}
+
+export interface ChatResponse {
+    response: string;
+    context: {
+        papers: any[];
+        concepts: any[];
+        methods: any[];
+    };
+    sources: {
+        papers: string[];
+        concepts: string[];
+        methods: string[];
+    };
+    usage?: {
+        prompt_tokens: number;
+        completion_tokens: number;
+        total_tokens: number;
+    };
+}
+
+export const assistantAPI = {
+    // Send a chat message
+    chat: async (request: ChatRequest): Promise<ChatResponse> => {
+        const response = await api.post(API_CONFIG.ENDPOINTS.ASSISTANT_CHAT, request);
+        return response.data;
+    },
+
+    // Stream chat (returns EventSource for SSE)
+    streamChat: (request: ChatRequest) => {
+        const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ASSISTANT_CHAT_STREAM}`;
+        return fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(request),
+        });
+    },
+
+    // Health check
+    healthCheck: async () => {
+        const response = await api.get(API_CONFIG.ENDPOINTS.ASSISTANT_HEALTH);
         return response.data;
     },
 };

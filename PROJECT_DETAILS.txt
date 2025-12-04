@@ -1,0 +1,588 @@
+================================================================================
+                        RESEARCHGRAPH AI - PROJECT DETAILS
+================================================================================
+
+PROJECT NAME: ResearchGraph AI
+VERSION: 0.1.0 (Phase 1 Complete)
+CREATED: 2024
+CURRENT DATE: December 3, 2025
+
+================================================================================
+                                 VISION & IDEA
+================================================================================
+
+CORE VISION:
+Build a game-changing personalized AI research companion that serves as a 
+centralized hub for academic research exploration, discovery, and collaboration.
+
+PROBLEM STATEMENT:
+Researchers face challenges in:
+- Discovering relevant papers across vast academic databases
+- Understanding complex research concepts and methodologies
+- Connecting related research areas and finding interdisciplinary insights
+- Maintaining knowledge and insights from papers they've read
+- Tracking research trends and receiving timely alerts
+
+SOLUTION:
+ResearchGraph AI combines:
+1. A Neo4j knowledge graph storing papers, concepts, methods, authors, datasets
+2. AI-powered natural language assistant powered by OpenAI GPT
+3. Interactive graph visualization for research exploration
+4. Persistent memory and personalization for each user
+
+TARGET USERS:
+- Academic researchers (PhD students, postdocs, professors)
+- Research scientists in industry
+- Students exploring research areas
+- Interdisciplinary teams needing research insights
+
+================================================================================
+                              PROJECT ROADMAP
+================================================================================
+
+PHASE 1: BASIC RAG ASSISTANT (✅ COMPLETE)
+Status: Complete and working
+Features:
+  ✅ OpenAI GPT integration (supports gpt-5-nano, gpt-4o-mini, etc.)
+  ✅ Neo4j knowledge graph context retrieval
+  ✅ Smart query extraction using AI
+  ✅ Chat interface with message history
+  ✅ Source citations (papers, concepts, methods)
+  ✅ Conversation context awareness (last 10 messages)
+  ✅ Graph visualization with React Flow
+  ✅ Interactive filtering and node exploration
+  ✅ Paper detail modal with authors, abstract, keywords
+  ✅ Dynamic filters based on available node types
+  
+Timeline: November 2024 - November 2025
+
+---
+
+PHASE 2: PERSISTENT MEMORY & USER PROFILES (🔄 PLANNED)
+Estimated Timeline: Q1 2026
+
+Features (Planned):
+  - Save all conversations to Neo4j database
+  - User profile nodes with interests and preferences
+  - Reading history tracking
+  - Favorite/bookmark papers and conversations
+  - User-specific recommendations based on history
+  - Conversation search and retrieval
+  - Export conversations and notes
+
+Benefits:
+  - Users can revisit past research sessions
+  - System learns user research interests
+  - Better personalized recommendations
+
+Implementation:
+  - New Neo4j nodes: User, Conversation, Message
+  - New relationships: User→Conversation, Conversation→Message, Message→Paper
+  - User authentication system
+  - Conversation persistence API endpoints
+
+---
+
+PHASE 3: ADAPTIVE LEARNING & RECOMMENDATIONS (📅 PLANNED)
+Estimated Timeline: Q2 2026
+
+Features (Planned):
+  - Analyze user interaction patterns
+  - "Users like you also read..." recommendations
+  - Research trend analysis and insights
+  - Automatic interest category detection
+  - Paper recommendation scores based on user profile
+  - Similar papers suggestions
+  - Expert/researcher discovery
+
+Benefits:
+  - Personalized research discovery
+  - Stay informed on relevant trends
+  - Find collaborators with similar interests
+
+---
+
+PHASE 4: PROACTIVE FEATURES & NOTIFICATIONS (📅 PLANNED)
+Estimated Timeline: Q3 2026
+
+Features (Planned):
+  - Weekly research digest emails
+  - New paper alerts on favorite topics
+  - Trending research topics in user's field
+  - Research milestone notifications
+  - Paper citation alerts
+  - Collaboration opportunity suggestions
+  - Scheduled research summaries
+
+Benefits:
+  - Stay ahead of research trends
+  - Never miss relevant new papers
+  - Passive knowledge updates
+
+---
+
+PHASE 5: COLLABORATION & COMMUNITY (📅 PLANNED)
+Estimated Timeline: Q4 2026
+
+Features (Planned):
+  - Share conversations and research insights
+  - Collaborative research sessions
+  - Annotation and highlighting on papers
+  - Group research projects
+  - Comment and discussion threads
+  - Co-reading sessions with colleagues
+  - Research team management
+
+Benefits:
+  - Collaborative research exploration
+  - Team knowledge sharing
+  - Interdisciplinary collaboration
+
+================================================================================
+                              TECHNICAL STACK
+================================================================================
+
+BACKEND:
+  Language: Python 3.9+
+  Framework: FastAPI
+  Database: Neo4j Community Edition (Graph Database)
+  AI: OpenAI API (GPT-5-nano, GPT-4o-mini, GPT-4o)
+  Server: Uvicorn
+  
+Backend Structure:
+  app/
+    main.py                  - FastAPI application setup
+    api/
+      papers.py            - Paper endpoints
+      assistant.py         - AI Assistant endpoints
+    services/
+      assistant_service.py - AI logic, context retrieval, OpenAI integration
+      papers_service.py    - Paper operations
+    schemas/
+      paper_schema.py      - Pydantic models for papers
+      assistant_schema.py  - Pydantic models for chat
+    core/
+      config.py           - Configuration and settings
+      neo4j_driver.py     - Neo4j connection and queries
+  
+API Endpoints:
+  POST   /api/v1/papers/              - List papers
+  GET    /api/v1/papers/search/       - Search papers
+  GET    /api/v1/papers/{id}/         - Get paper details
+  GET    /api/v1/papers/{id}/graph    - Get graph data for paper
+  POST   /api/v1/assistant/chat       - Send message, get response
+  POST   /api/v1/assistant/chat/stream - Stream response (SSE)
+  GET    /api/v1/assistant/health     - Health check
+
+---
+
+FRONTEND:
+  Framework: React 18+ with TypeScript
+  UI Library: shadcn/ui (Tailwind CSS based)
+  Visualization: React Flow (for graph)
+  Build Tool: Vite
+  Icons: Lucide React
+  State Management: React Hooks
+  HTTP Client: Axios
+  
+Frontend Structure:
+  src/
+    pages/
+      Dashboard.tsx        - Main paper grid view
+      AssistantPage.tsx    - Chat interface
+      GraphPage.tsx        - Graph visualization
+      NotFound.tsx         - 404 page
+    components/
+      Navigation.tsx       - Top navbar
+      PaperDetailModal.tsx - Paper detail popup
+      GraphVisualization.tsx - React Flow graph
+      EnhancedSearchBar.tsx - Search functionality
+      ui/                  - shadcn/ui components
+    services/
+      api.ts              - API client and types
+    config/
+      api.ts              - API configuration
+    lib/
+      utils.ts            - Utility functions
+    
+Pages:
+  /                  - Dashboard (paper grid)
+  /graph             - Graph visualization
+  /assistant         - AI chat interface
+
+---
+
+DATABASE (NEO4J):
+Graph Nodes:
+  Paper
+    Properties: arxiv_id, title, abstract, published_date, categories, 
+                pdf_url, citation_count, on_huggingface, hf_ai_keywords,
+                graph_concepts, graph_methods, authors
+    
+  Author
+    Properties: name
+    
+  Concept
+    Properties: name, category
+    
+  Method
+    Properties: name, algorithm_type
+    
+  Dataset
+    Properties: name, size
+    
+  Metric
+    Properties: name, type
+
+Relationships:
+  Paper -[:AUTHORED_BY]-> Author
+  Paper -[:INTRODUCES]-> Concept
+  Paper -[:PROPOSES]-> Method
+  Paper -[:EVALUATES_ON]-> Dataset
+  Paper -[:USES_METRIC]-> Metric
+
+Example Query:
+  MATCH (p:Paper)-[:AUTHORED_BY]->(a:Author),
+        (p)-[:INTRODUCES]->(c:Concept)
+  WHERE toLower(p.title) CONTAINS 'transformer'
+  RETURN p, collect(a.name) as authors, collect(c.name) as concepts
+
+---
+
+CONFIGURATION:
+Environment Variables (.env):
+  NEO4J_URI=bolt://localhost:7687
+  NEO4J_USER=neo4j
+  NEO4J_PASSWORD=neo4j123
+  OPENAI_API_KEY=sk-proj-xxx...
+  OPENAI_MODEL=gpt-5-nano (or gpt-4o-mini, gpt-4o)
+  APP_NAME=ResearchGraph AI
+  DEBUG=True
+
+================================================================================
+                           KEY FEATURES & FLOW
+================================================================================
+
+1. DASHBOARD (Home Page)
+   - Grid view of all papers
+   - Paper tiles show: title, authors (first 6), keywords (first 3), abstract
+   - Click paper to open detail modal
+   - Search functionality
+   - Filters by category, author, date range
+
+2. PAPER DETAIL MODAL
+   - Full paper information
+   - Authors list
+   - Abstract
+   - HuggingFace AI summary (if available)
+   - Keywords (from HuggingFace or graph)
+   - Graph concepts and methods
+   - ArXiv link
+   - "View in Graph" button
+
+3. GRAPH VISUALIZATION
+   - Interactive Neo4j graph display
+   - Nodes: Papers, Authors, Concepts, Methods, Datasets, Metrics
+   - Node sizing by importance (paper count)
+   - Color-coded by node type
+   - Hover tooltips (Paper nodes show year, ArXiv ID, categories)
+   - Dynamic sidebar filters for each node type
+   - Radial cluster layout algorithm
+   - Click nodes to highlight connections
+   - Edge labels showing relationship types
+
+4. AI ASSISTANT
+   - Chat interface similar to ChatGPT
+   - User message: white background with "V" avatar
+   - Assistant message: white background with sparkle icon
+   - Real-time message streaming
+   - Source citations displayed as badges
+     - Papers (with ArXiv IDs)
+     - Concepts (related research concepts)
+     - Methods (techniques discussed)
+   - Conversation history (last 10 messages for context)
+   - Suggested questions for new users
+   - Loading indicator while processing
+
+5. SMART QUERY EXTRACTION
+   - Uses OpenAI to understand user intent
+   - Extracts relevant research terms from questions
+   - Examples:
+     "Explain transformers" → ["Transformer", "attention mechanism"]
+     "What papers discuss BERT?" → ["BERT", "language model"]
+     "Can I ask about sports?" → [] (no research terms)
+   - Falls back to pattern matching if extraction fails
+   - Only searches database for research-related queries
+
+6. CONTEXT-AWARE RESPONSES
+   - Queries Neo4j for relevant papers, concepts, methods
+   - Sends context to OpenAI along with user question
+   - Response cites papers from knowledge graph
+   - Maintains conversation history for follow-up questions
+   - Acknowledges database limitations when no papers match
+
+================================================================================
+                            HOW IT WORKS
+================================================================================
+
+USER FLOW - ASKING A QUESTION:
+
+1. User types question in Assistant chat
+   Example: "Explain the Transformer architecture"
+
+2. Frontend sends to backend:
+   POST /api/v1/assistant/chat
+   {
+     "message": "Explain the Transformer architecture",
+     "conversation_history": [previous messages]
+   }
+
+3. Backend processes:
+   a) Extract search terms using GPT-3.5-turbo
+      → ["Transformer", "architecture", "mechanism"]
+   
+   b) Query Neo4j for each term:
+      - Search papers by title/abstract
+      - Get related concepts and methods
+      - Get author information
+      
+   c) Format context as markdown:
+      ## Relevant Papers:
+      1. **Attention Is All You Need**
+         - Authors: Vaswani et al.
+         - ArXiv ID: 1706.03762
+         - Concepts: Attention, Self-Attention, Multi-Head Attention
+         
+   d) Build OpenAI request:
+      System: [AI personality and capabilities]
+      User: [Context] + [User Question]
+      
+   e) Get response from GPT-5-nano
+   
+   f) Format and return response with sources
+
+4. Frontend displays:
+   - Response text
+   - Source badges (papers, concepts, methods)
+   - Maintains message history
+
+================================================================================
+                           DATA SOURCES
+================================================================================
+
+PAPER SOURCES:
+1. ArXiv API
+   - Bulk download of computer science papers
+   - Metadata: title, abstract, authors, categories, published date
+   - PDF URLs
+   
+2. HuggingFace Datasets
+   - AI/ML papers with summaries
+   - AI-generated summaries and keywords
+   - Community discussions and applications
+
+3. Custom CSV Uploads
+   - Ability to import custom paper datasets
+
+ENRICHMENT:
+- Author enrichment from ArXiv API
+- Concept/Method extraction from abstracts
+- Relationship creation based on citations
+- Keyword extraction from HuggingFace
+
+================================================================================
+                              PERFORMANCE
+================================================================================
+
+RESPONSE TIMES:
+- Neo4j query: 100-300ms
+- OpenAI API call: 2-5 seconds
+- Total response: 2-6 seconds (typical)
+
+TOKEN USAGE (per query):
+- System prompt: ~150 tokens
+- Context (papers + concepts): 500-1500 tokens
+- Conversation history: 50-100 tokens
+- Response: 200-1000 tokens
+- Total: 1000-3000 tokens per query
+
+COST ANALYSIS (GPT-5-nano):
+- Input: $0.05 per 1M tokens
+- Output: $0.40 per 1M tokens
+- Per query: ~$0.001-0.003
+- 1000 queries: ~$1-3
+- Very affordable! ✓
+
+SCALABILITY:
+- Neo4j can handle millions of nodes
+- Can support concurrent users
+- OpenAI API has high rate limits
+- Frontend is lightweight and responsive
+
+================================================================================
+                            CURRENT STATUS
+================================================================================
+
+COMPLETED ✅:
+- Backend FastAPI setup
+- Neo4j knowledge graph
+- Paper CRUD operations
+- Graph visualization with React Flow
+- AI assistant with OpenAI integration
+- Smart query extraction
+- Context-aware responses
+- Paper detail modal
+- Dynamic graph filtering
+- Source citations
+- Conversation history
+- Git repository setup (fixed submodule issue)
+- Environment configuration
+
+WORKING FEATURES:
+- Dashboard shows all papers
+- Search papers by title/keywords
+- View paper details
+- Interactive graph visualization
+- Chat with AI about papers
+- AI retrieves relevant papers from Neo4j
+- Citations displayed as badges
+- Multi-turn conversations
+
+KNOWN LIMITATIONS:
+- No user authentication (Phase 2)
+- No persistent message history (Phase 2)
+- No user preferences/bookmarks (Phase 2)
+- Limited to session-based context
+- No collaborative features (Phase 5)
+- No real-time notifications (Phase 4)
+
+================================================================================
+                          SETUP & DEPLOYMENT
+================================================================================
+
+PREREQUISITES:
+- Python 3.9+
+- Node.js 16+
+- Neo4j Community Edition
+- OpenAI API key
+
+BACKEND SETUP:
+1. Navigate to backend folder
+   cd backend
+
+2. Create virtual environment
+   python -m venv .venv
+   .venv\Scripts\activate (Windows)
+
+3. Install dependencies
+   pip install -r requirements.txt
+
+4. Create .env file with configuration
+   OPENAI_API_KEY=sk-proj-xxx...
+   NEO4J_URI=bolt://localhost:7687
+   etc.
+
+5. Start backend
+   uvicorn app.main:app --reload
+
+FRONTEND SETUP:
+1. Navigate to frontend
+   cd frontend/cortex-nexus-11
+
+2. Install dependencies
+   npm install
+
+3. Start dev server
+   npm run dev
+
+4. Access at http://localhost:8080
+
+NEO4J SETUP:
+1. Start Neo4j Docker container or local instance
+2. Access at http://localhost:7474
+3. Username: neo4j, Password: neo4j123
+
+API DOCUMENTATION:
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+
+================================================================================
+                            TEAM & CONTRIBUTIONS
+================================================================================
+
+PROJECT LEAD: Veeresh
+REPOSITORY: veereshgit99/researchgraph-ai
+
+TECHNOLOGIES & CREDITS:
+- FastAPI: https://fastapi.tiangolo.com/
+- Neo4j: https://neo4j.com/
+- OpenAI: https://openai.com/
+- React: https://react.dev/
+- shadcn/ui: https://ui.shadcn.com/
+- React Flow: https://reactflow.dev/
+- Vite: https://vitejs.dev/
+
+================================================================================
+                          FUTURE ENHANCEMENTS
+================================================================================
+
+SHORT TERM (Phase 2-3):
+- User authentication and profiles
+- Persistent conversation storage
+- Bookmarks and favorites
+- User preference learning
+- Personalized recommendations
+- Advanced search with filters
+- Paper annotations
+
+MEDIUM TERM (Phase 4-5):
+- Proactive research alerts
+- Trending topic detection
+- Collaboration features
+- Team workspaces
+- Research group management
+- Publication tracking
+
+LONG TERM:
+- Mobile app
+- Browser extension for research
+- Integration with Zotero/Mendeley
+- Researcher community platform
+- Conference and workshop discovery
+- Grant opportunity recommendations
+- Research network visualization
+
+================================================================================
+                             CONTACT & SUPPORT
+================================================================================
+
+GitHub: https://github.com/veereshgit99/researchgraph-ai
+Email: [Add your email]
+Documentation: Check README.md and individual guide files
+
+================================================================================
+                              PROJECT SUMMARY
+================================================================================
+
+ResearchGraph AI is building the future of academic research discovery and 
+exploration. By combining a personalized AI assistant, knowledge graph 
+technology, and interactive visualization, we're creating a platform that 
+helps researchers:
+
+✓ Discover relevant papers intelligently
+✓ Understand complex research concepts
+✓ Explore research connections and trends
+✓ Get personalized recommendations
+✓ Collaborate with other researchers
+✓ Stay informed on cutting-edge research
+
+This is Phase 1 - the foundation. With persistent memory (Phase 2), adaptive 
+learning (Phase 3), and proactive features (Phase 4), ResearchGraph AI will 
+become an indispensable research companion for every researcher.
+
+The vision is to democratize research exploration and make it accessible, 
+intuitive, and powerful for everyone.
+
+================================================================================
+                              END OF DOCUMENT
+================================================================================
